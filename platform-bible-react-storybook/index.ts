@@ -18,6 +18,12 @@ export {
 } from './components/advanced/recent-searches.component';
 export type { RecentSearchesProps } from './components/advanced/recent-searches.component';
 export type { BookSelectorLocalizedStrings } from './components/advanced/book-selector.component';
+export type {
+  CommentListProps,
+  AddCommentToThreadOptions,
+} from './components/advanced/comment-list/comment-list.types';
+export { COMMENT_LIST_STRING_KEYS } from './components/advanced/comment-list/comment-list.types';
+export { default as CommentList } from './components/advanced/comment-list/comment-list.component';
 export { default as DataTable } from './components/advanced/data-table/data-table.component';
 export type {
   ColumnDef,
@@ -40,8 +46,23 @@ export {
 export { MoreInfo } from './components/advanced/extension-marketplace/more-info.component';
 export type { VersionHistoryType } from './components/advanced/extension-marketplace/version-history.component';
 export { default as Footer } from './components/advanced/extension-marketplace/footer.component';
-
 export { default as Filter } from './components/advanced/filter.component';
+export type {
+  FootnoteItemProps,
+  FootnoteLayout,
+  FootnoteListProps,
+} from './components/advanced/footnotes/footnotes.types';
+export {
+  default as FootnoteEditor,
+  type FootnoteEditorProps,
+} from './components/advanced/footnote-editor/footnote-editor.component';
+export {
+  FOOTNOTE_EDITOR_STRING_KEYS,
+  type FootnoteEditorLocalizedStrings,
+  type FootnoteCallerType,
+} from './components/advanced/footnote-editor/footnote-editor.types';
+export { default as FootnoteItem } from './components/advanced/footnotes/footnote-item.component';
+export { default as FootnoteList } from './components/advanced/footnotes/footnote-list.component';
 export {
   default as Inventory,
   type InventoryItem,
@@ -63,6 +84,12 @@ export {
   inventoryCountColumn,
   inventoryStatusColumn,
 } from './components/advanced/inventory/inventory-columns';
+export { MarkerMenu, MARKER_MENU_STRING_KEYS } from './components/advanced/marker-menu.component';
+export type {
+  MarkerMenuProps,
+  MarkerMenuItem,
+  MarkerMenuLocalizedStrings,
+} from './components/advanced/marker-menu.component';
 export {
   default as MultiSelectComboBox,
   type MultiSelectComboBoxEntry,
@@ -121,18 +148,18 @@ export type {
   ComboBoxLabelOption,
   ComboBoxProps,
   ComboBoxOption,
+  ComboBoxGroup,
 } from './components/basics/combo-box.component';
-
 export { ErrorDump } from './components/basics/error-dump.component';
 export { ERROR_DUMP_STRING_KEYS } from './components/basics/error-dump.component';
 export type { ErrorDumpLocalizedStrings } from './components/basics/error-dump.component';
+export { default as ResultsCard } from './components/basics/results-card.component';
 export { default as SearchBar } from './components/basics/search-bar.component';
 export type { SearchBarProps } from './components/basics/search-bar.component';
 export { default as Spinner } from './components/basics/spinner.component';
 export type { SpinnerProps } from './components/basics/spinner.component';
 export { default as TextField } from './components/basics/text-field.component';
 export type { TextFieldProps } from './components/basics/text-field.component';
-
 export { Alert, AlertTitle, AlertDescription } from './components/shadcn-ui/alert';
 export { Avatar, AvatarFallback, AvatarImage } from './components/shadcn-ui/avatar';
 export { Badge, type BadgeProps, badgeVariants } from './components/shadcn-ui/badge';
@@ -163,6 +190,7 @@ export * from './components/shadcn-ui/popover';
 export { Progress } from './components/shadcn-ui/progress';
 export { RadioGroup, RadioGroupItem } from './components/shadcn-ui/radio-group';
 export * from './components/shadcn-ui/select';
+export * from './components/shadcn-ui/resizable';
 export { Separator } from './components/shadcn-ui/separator';
 export * from './components/shadcn-ui/sidebar';
 export * from './components/shadcn-ui/sonner';
