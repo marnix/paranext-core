@@ -1,5 +1,5 @@
-import { cn } from '@/utils/shadcn-ui.util';
-import { MoreHorizontal } from 'lucide-react';
+import { cn } from '@/utils/shadcn-ui/utils';
+import { MoreVertical } from 'lucide-react';
 import React, { ReactNode } from 'react';
 import { Button } from '../shadcn-ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../shadcn-ui/dropdown-menu';
@@ -20,10 +20,16 @@ export interface ResultsCardProps {
   className?: string;
   /** Main content to display on the card */
   children: ReactNode;
+  /** Additional buttons to show to the end of the card when selected, before the dropdown menu */
+  selectedButtons?: ReactNode;
+  /** Additional buttons to show when the card is hovered but not selected */
+  hoverButtons?: ReactNode;
   /** Content to show in the dropdown menu when selected */
   dropdownContent?: ReactNode;
-  /** Additional content to show below the main content when selected */
-  additionalSelectedContent?: ReactNode;
+  /** Whether to show the dropdown menu button on hover even when not selected. Defaults to false */
+  showDropdownOnHover?: boolean;
+  /** Additional content to show below the main content */
+  additionalContent?: ReactNode;
   /** Color to use for the card's accent border */
   accentColor?: string;
 }
@@ -41,9 +47,12 @@ export function ResultsCard({
   isHidden = false,
   className,
   children,
+  selectedButtons,
+  hoverButtons,
   dropdownContent,
-  additionalSelectedContent,
+  additionalContent,
   accentColor,
+  showDropdownOnHover = false,
 }: ResultsCardProps) {
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
@@ -62,36 +71,52 @@ export function ResultsCard({
       tabIndex={0}
       aria-pressed={isSelected}
       className={cn(
-        'tw-relative tw-min-w-36 tw-rounded-xl tw-border tw-shadow-none hover:tw-bg-muted/50',
-        { 'tw-opacity-50 hover:tw-opacity-100': isDenied && !isSelected },
-        { 'tw-bg-accent': isSelected },
-        { 'tw-bg-transparent': !isSelected },
+        'tw:group tw:relative tw:min-w-36 tw:rounded-xl tw:border tw:shadow-none tw:hover:bg-muted/50',
+        { 'tw:opacity-50 tw:hover:opacity-100': isDenied && !isSelected },
+        { 'tw:bg-accent': isSelected },
+        { 'tw:bg-transparent': !isSelected },
         className,
       )}
     >
-      <div className="tw-flex tw-flex-col tw-gap-2 tw-p-4">
-        <div className="tw-flex tw-justify-between tw-overflow-hidden">
-          <div className="tw-min-w-0 tw-flex-1">{children}</div>
+      <div className="tw:flex tw:flex-col tw:gap-2 tw:p-4">
+        <div className="tw:flex tw:justify-between tw:overflow-hidden">
+          <div className="tw:min-w-0 tw:flex-1">{children}</div>
+          {isSelected && selectedButtons}
+          {!isSelected && hoverButtons && (
+            <div className="tw:invisible tw:group-hover:visible">{hoverButtons}</div>
+          )}
+          {!isSelected && showDropdownOnHover && dropdownContent && (
+            <div className="tw:invisible tw:group-hover:visible">
+              <DropdownMenu>
+                <DropdownMenuTrigger className={cn(accentColor && 'tw:me-1')} asChild>
+                  <Button className="tw:m-1 tw:h-6 tw:w-6" variant="ghost" size="icon">
+                    <MoreVertical />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">{dropdownContent}</DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
           {isSelected && dropdownContent && (
             <DropdownMenu>
-              <DropdownMenuTrigger className={cn(accentColor && 'tw-me-1')} asChild>
-                <Button className="tw-m-1 tw-h-6 tw-w-6" variant="ghost" size="icon">
-                  <MoreHorizontal />
+              <DropdownMenuTrigger className={cn(accentColor && 'tw:me-1')} asChild>
+                <Button className="tw:m-1 tw:h-6 tw:w-6" variant="ghost" size="icon">
+                  <MoreVertical />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">{dropdownContent}</DropdownMenuContent>
             </DropdownMenu>
           )}
         </div>
-        {isSelected && additionalSelectedContent && (
-          <div className="tw-w-fit tw-min-w-0 tw-max-w-full tw-overflow-hidden">
-            {additionalSelectedContent}
+        {additionalContent && (
+          <div className="tw:w-fit tw:min-w-0 tw:max-w-full tw:overflow-hidden">
+            {additionalContent}
           </div>
         )}
       </div>
       {accentColor && (
         <div
-          className={`tw-absolute tw-right-0 tw-top-0 tw-h-full tw-w-2 tw-rounded-r-xl ${accentColor}`}
+          className={`tw:absolute tw:right-0 tw:top-0 tw:h-full tw:w-2 tw:rounded-r-xl ${accentColor}`}
         />
       )}
     </div>

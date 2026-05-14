@@ -160,13 +160,14 @@ export const InteractiveExample: Story = {
       setErrors(newErrors);
 
       if (Object.keys(newErrors).length === 0) {
+        // Story form submission handler - alert is intentional for user feedback in the demo
         // eslint-disable-next-line no-alert
         alert('Form submitted successfully!');
       }
     };
 
     return (
-      <form onSubmit={handleSubmit} className="tw-max-w-md tw-space-y-4">
+      <form onSubmit={handleSubmit} className="tw:max-w-md tw:space-y-4">
         <TextField
           label="First Name"
           placeholder="John"
@@ -213,7 +214,7 @@ export const InteractiveExample: Story = {
 
         <button
           type="submit"
-          className="tw-rounded tw-bg-blue-500 tw-px-4 tw-py-2 tw-text-white hover:tw-bg-blue-600"
+          className="tw:rounded tw:bg-blue-500 tw:px-4 tw:py-2 tw:text-white tw:hover:bg-blue-600"
         >
           Submit Form
         </button>

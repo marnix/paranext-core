@@ -7,16 +7,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/shadcn-ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider } from '@/components/shadcn-ui/tooltip';
-import { TooltipTrigger } from '@radix-ui/react-tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/shadcn-ui/tooltip';
 import { FunctionSquare, SquareSigma, SquareX } from 'lucide-react';
 import { formatReplacementString } from 'platform-bible-utils';
+import { Z_INDEX_FOOTNOTE_EDITOR } from '@/components/z-index';
 import { FootnoteEditorLocalizedStrings } from './footnote-editor.types';
 
 interface FootnoteTypeDropdownProps {
   noteType: string;
   handleNoteTypeChange: (newNoteType: string) => void;
   localizedStrings: FootnoteEditorLocalizedStrings;
+  isTypeSwitchable: boolean;
 }
 
 const renderNoteTypeButtonContent = (
@@ -68,6 +74,7 @@ export function FootnoteTypeDropdown({
   noteType,
   handleNoteTypeChange,
   localizedStrings,
+  isTypeSwitchable,
 }: FootnoteTypeDropdownProps) {
   return (
     <DropdownMenu>
@@ -75,11 +82,7 @@ export function FootnoteTypeDropdown({
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="tw-h-6 disabled:tw-pointer-events-auto"
-                disabled={noteType === 'x'}
-              >
+              <Button variant="outline" className="tw:h-6">
                 {renderNoteTypeButtonContent(noteType, localizedStrings)}
               </Button>
             </DropdownMenuTrigger>
@@ -89,32 +92,39 @@ export function FootnoteTypeDropdown({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      {noteType !== 'x' && (
-        <DropdownMenuContent className="tw-z-[300]">
-          <DropdownMenuLabel>
-            {localizedStrings['%footnoteEditor_noteTypeDropdown_label%']}
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {/* <DropdownMenuRadioGroup value={noteType} onValueChange={handleNoteTypeChange}> */}
-          <DropdownMenuCheckboxItem
-            checked={noteType === 'f'}
-            onCheckedChange={() => handleNoteTypeChange('f')}
-            className="tw-gap-2"
-          >
-            <FunctionSquare />
-            <span>{localizedStrings['%footnoteEditor_noteType_footnote_label%']}</span>
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={noteType === 'fe'}
-            onCheckedChange={() => handleNoteTypeChange('fe')}
-            className="tw-gap-2"
-          >
-            <SquareSigma />
-            <span>{localizedStrings['%footnoteEditor_noteType_endNote_label%']}</span>
-          </DropdownMenuCheckboxItem>
-          {/* </DropdownMenuRadioGroup> */}
-        </DropdownMenuContent>
-      )}
+      <DropdownMenuContent style={{ zIndex: Z_INDEX_FOOTNOTE_EDITOR }}>
+        <DropdownMenuLabel>
+          {localizedStrings['%footnoteEditor_noteTypeDropdown_label%']}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuCheckboxItem
+          disabled={noteType !== 'x' && !isTypeSwitchable}
+          checked={noteType === 'x'}
+          onCheckedChange={() => handleNoteTypeChange('x')}
+          className="tw:gap-2"
+        >
+          <SquareX />
+          <span>{localizedStrings['%footnoteEditor_noteType_crossReference_label%']}</span>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          disabled={noteType === 'x' && !isTypeSwitchable}
+          checked={noteType === 'f'}
+          onCheckedChange={() => handleNoteTypeChange('f')}
+          className="tw:gap-2"
+        >
+          <FunctionSquare />
+          <span>{localizedStrings['%footnoteEditor_noteType_footnote_label%']}</span>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          disabled={noteType === 'x' && !isTypeSwitchable}
+          checked={noteType === 'fe'}
+          onCheckedChange={() => handleNoteTypeChange('fe')}
+          className="tw:gap-2"
+        >
+          <SquareSigma />
+          <span>{localizedStrings['%footnoteEditor_noteType_endNote_label%']}</span>
+        </DropdownMenuCheckboxItem>
+      </DropdownMenuContent>
     </DropdownMenu>
   );
 }

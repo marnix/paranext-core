@@ -1,4 +1,5 @@
-import { ReactNode, useMemo, useState } from 'react';
+import { FC, LegacyRef, useMemo, useState } from 'react';
+import { Ban } from 'lucide-react';
 import {
   Command,
   CommandEmpty,
@@ -6,6 +7,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
   CommandShortcut,
 } from '../shadcn-ui/command';
 
@@ -25,6 +27,14 @@ export type MarkerMenuLocalizedStrings = {
   [localizedKey in (typeof MARKER_MENU_STRING_KEYS)[number]]?: string;
 };
 
+/** Interface that includes the properties that the provided icon element should have */
+export interface MarkerIconProps {
+  /** CSS class name to apply to the icon */
+  className?: string;
+  /** Size in px that the icon should be */
+  size?: string | number;
+}
+
 /** Type for the markers that contain all necessary information to be displayed in the list */
 export interface MarkerMenuItem {
   /** If the item is a marker, then this is the marker code */
@@ -34,7 +44,7 @@ export interface MarkerMenuItem {
   /** An optional subtitle for the marker */
   subtitle?: string;
   /** Optional name of icon to use instead of the marker */
-  icon?: ReactNode;
+  icon?: FC<MarkerIconProps>;
   /** Whether the command/marker is deprecated */
   isDeprecated?: boolean;
   /** Whether the command/marker is disallowed for this project */
@@ -52,28 +62,86 @@ export interface MarkerMenuProps {
    * actions
    */
   markerMenuItems: MarkerMenuItem[];
+  /** Optional ref for the command search input to be able to focus it manually */
+  searchRef?: LegacyRef<HTMLInputElement>;
+}
+
+/** Function to format the marker menu icon and size it accordingly */
+function MenuMarkerIcon({ icon, className }: { icon?: FC<MarkerIconProps>; className?: string }) {
+  const IconComponent = icon ?? Ban;
+  return <IconComponent className={className} size={16} />;
+}
+
+/**
+ * Function that renders the marker menu command item for both the marker matches and the title
+ * matches
+ */
+function MarkerMenuCommandItem({
+  item,
+  localizedStrings,
+}: {
+  item: MarkerMenuItem;
+  localizedStrings: MarkerMenuLocalizedStrings;
+}) {
+  return (
+    <CommandItem
+      className="tw:flex tw:gap-2 tw:hover:bg-accent"
+      disabled={item.isDisallowed || item.isDeprecated}
+      onSelect={item.action}
+    >
+      <div className="tw:w-8 tw:min-w-8">
+        {item.marker ? (
+          <span className="tw:text-xs">{item.marker}</span>
+        ) : (
+          <div>
+            <MenuMarkerIcon icon={item.icon} />
+          </div>
+        )}
+      </div>
+      <div>
+        <p className="tw:text-sm">{item.title}</p>
+        {item.subtitle && <p className="tw:text-xs tw:text-muted-foreground">{item.subtitle}</p>}
+      </div>
+      {(item.isDisallowed || item.isDeprecated) && (
+        <CommandShortcut className="tw:font-sans">
+          {item.isDisallowed
+            ? localizedStrings['%markerMenu_disallowed_label%']
+            : localizedStrings['%markerMenu_deprecated_label%']}
+        </CommandShortcut>
+      )}
+    </CommandItem>
+  );
 }
 
 /** Marker menu component to render the list of markers and a few commands in the scripture editor */
-export function MarkerMenu({ localizedStrings, markerMenuItems }: MarkerMenuProps) {
+export function MarkerMenu({ localizedStrings, markerMenuItems, searchRef }: MarkerMenuProps) {
   const [commandSearch, setCommandSearch] = useState<string>('');
 
-  const filteredMarkerItems = useMemo(() => {
+  const [exactMatchItems, titleMatchItems] = useMemo(() => {
     const query = commandSearch.trim().toLowerCase();
     if (!query) {
-      return markerMenuItems;
+      return [markerMenuItems, []];
     }
 
-    return markerMenuItems.filter(
-      (markerItem) =>
-        markerItem.marker?.toLowerCase().includes(query) ||
-        markerItem.title.toLowerCase().includes(query),
+    // Puts items with markers that have direct inclusions of the search query at the top
+    const filteredExactMatchItems = markerMenuItems.filter((markerItem) =>
+      markerItem.marker?.toLowerCase().includes(query),
     );
+    // Then lists items with titles that includes the search query
+    const filteredTitleMatchItems = markerMenuItems.filter(
+      (markerItem) =>
+        markerItem.title.toLowerCase().includes(query) &&
+        !filteredExactMatchItems.includes(markerItem),
+    );
+
+    return [filteredExactMatchItems, filteredTitleMatchItems];
   }, [commandSearch, markerMenuItems]);
 
   return (
-    <Command className="tw-p-1" shouldFilter={false} loop>
+    <Command className="tw:p-1" shouldFilter={false} loop>
       <CommandInput
+        className="marker-menu-search"
+        ref={searchRef}
         value={commandSearch}
         onValueChange={(value) => setCommandSearch(value)}
         placeholder={localizedStrings['%markerMenu_searchPlaceholder%']}
@@ -81,36 +149,28 @@ export function MarkerMenu({ localizedStrings, markerMenuItems }: MarkerMenuProp
       <CommandList>
         <CommandEmpty>{localizedStrings['%markerMenu_noResults%']}</CommandEmpty>
         <CommandGroup>
-          {filteredMarkerItems.map((item) => (
-            <CommandItem
-              className="tw-flex tw-gap-2 hover:tw-bg-accent"
-              disabled={item.isDisallowed || item.isDeprecated}
-              onSelect={item.action}
-              key={`item-${item.title}`}
-            >
-              <div className="tw-w-6">
-                {item.marker ? (
-                  <span className="tw-text-xs">{item.marker}</span>
-                ) : (
-                  <div>{item.icon}</div>
-                )}
-              </div>
-              <div>
-                <p className="tw-text-sm">{item.title}</p>
-                {item.subtitle && (
-                  <p className="tw-text-xs tw-text-muted-foreground">{item.subtitle}</p>
-                )}
-              </div>
-              {(item.isDisallowed || item.isDeprecated) && (
-                <CommandShortcut className="tw-font-sans">
-                  {item.isDisallowed
-                    ? localizedStrings['%markerMenu_disallowed_label%']
-                    : localizedStrings['%markerMenu_deprecated_label%']}
-                </CommandShortcut>
-              )}
-            </CommandItem>
+          {exactMatchItems.map((item) => (
+            <MarkerMenuCommandItem
+              item={item}
+              localizedStrings={localizedStrings}
+              key={`item-${item.marker ?? item.icon?.displayName}-${item.title.replaceAll(' ', '')}`}
+            />
           ))}
         </CommandGroup>
+        {titleMatchItems.length > 0 && (
+          <>
+            {exactMatchItems.length > 0 && <CommandSeparator alwaysRender />}
+            <CommandGroup>
+              {titleMatchItems.map((item) => (
+                <MarkerMenuCommandItem
+                  item={item}
+                  localizedStrings={localizedStrings}
+                  key={`item-${item.marker ?? item.icon?.displayName}-${item.title.replaceAll(' ', '')}`}
+                />
+              ))}
+            </CommandGroup>
+          </>
+        )}
       </CommandList>
     </Command>
   );

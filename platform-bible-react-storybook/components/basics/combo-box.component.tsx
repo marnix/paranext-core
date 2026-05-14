@@ -1,6 +1,6 @@
-import { ReactNode, useState } from 'react';
+import { type CSSProperties, type ComponentProps, ReactNode, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import { cn } from '@/utils/shadcn-ui.util';
+import { cn } from '@/utils/shadcn-ui/utils';
 import { Button, ButtonProps } from '@/components/shadcn-ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/shadcn-ui/popover';
 import {
@@ -11,7 +11,6 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/shadcn-ui/command';
-import { PopoverProps } from '@radix-ui/react-popover';
 
 export type ComboBoxLabelOption = { label: string; secondaryLabel?: string };
 export type ComboBoxOption = string | number | ComboBoxLabelOption;
@@ -40,6 +39,11 @@ export type ComboBoxProps<T> = {
   buttonClassName?: string;
   /** Additional css classes to help with unique styling of the combo box popover */
   popoverContentClassName?: string;
+  /**
+   * Additional inline styles for the combo box popover. Use for z-index overrides instead of
+   * className to avoid being overridden by PopoverContent's inline default z-index.
+   */
+  popoverContentStyle?: CSSProperties;
   /**
    * The selected value that the combo box currently holds. Must be shallow equal to one of the
    * options entries.
@@ -70,7 +74,7 @@ export type ComboBoxProps<T> = {
   isDisabled?: boolean;
   /** Optional aria-label for the trigger button for accessibility */
   ariaLabel?: string;
-} & PopoverProps;
+} & ComponentProps<typeof Popover>;
 
 function getOptionLabelDefault(option: ComboBoxOption): string {
   if (typeof option === 'string') {
@@ -94,6 +98,7 @@ export function ComboBox<T extends ComboBoxOption = ComboBoxOption>({
   className,
   buttonClassName,
   popoverContentClassName,
+  popoverContentStyle,
   value,
   onChange = () => {},
   getOptionLabel = getOptionLabelDefault,
@@ -137,16 +142,16 @@ export function ComboBox<T extends ComboBoxOption = ComboBoxOption>({
           onChange(option);
           setOpen(false);
         }}
-        className="tw-flex tw-items-center"
+        className="tw:flex tw:items-center"
       >
         <Check
-          className={cn('tw-me-2 tw-h-4 tw-w-4 tw-shrink-0', {
-            'tw-opacity-0': !value || getOptionLabel(value) !== optionLabel,
+          className={cn('tw:me-2 tw:h-4 tw:w-4 tw:shrink-0', {
+            'tw:opacity-0': !value || getOptionLabel(value) !== optionLabel,
           })}
         />
-        <span className="tw-flex-1 tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap">
+        <span className="tw:flex-1 tw:overflow-hidden tw:text-ellipsis tw:whitespace-nowrap">
           {optionLabel}
-          {secondaryLabel && <span className="tw-text-muted-foreground"> · {secondaryLabel}</span>}
+          {secondaryLabel && <span className="tw:text-muted-foreground"> · {secondaryLabel}</span>}
         </span>
       </CommandItem>
     );
@@ -162,31 +167,32 @@ export function ComboBox<T extends ComboBoxOption = ComboBoxOption>({
           aria-label={ariaLabel}
           id={id}
           className={cn(
-            'tw-flex tw-w-[200px] tw-items-center tw-justify-between tw-overflow-hidden',
+            'tw:flex tw:w-[200px] tw:items-center tw:justify-between tw:overflow-hidden',
             buttonClassName ?? className,
           )}
           disabled={isDisabled}
         >
-          <div className="tw-flex tw-min-w-0 tw-flex-1 tw-items-center tw-overflow-hidden">
-            {icon && <div className="tw-shrink-0 tw-pe-2">{icon}</div>}
+          <div className="tw:flex tw:min-w-0 tw:flex-1 tw:items-center tw:overflow-hidden">
+            {icon && <div className="tw:shrink-0 tw:pe-2">{icon}</div>}
             <span
               className={cn(
-                'tw-min-w-0 tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap tw-text-start',
+                'tw:min-w-0 tw:overflow-hidden tw:text-ellipsis tw:whitespace-nowrap tw:text-start',
               )}
             >
               {value ? buttonLabel(value) : buttonPlaceholder}
             </span>
           </div>
 
-          <ChevronDown className="tw-ms-2 tw-h-4 tw-w-4 tw-shrink-0 tw-opacity-50" />
+          <ChevronDown className="tw:ms-2 tw:h-4 tw:w-4 tw:shrink-0 tw:opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
         align={alignDropDown}
-        className={cn('tw-w-[200px] tw-p-0', popoverContentClassName)}
+        className={cn('tw:w-[200px] tw:p-0', popoverContentClassName)}
+        style={popoverContentStyle}
       >
         <Command>
-          <CommandInput placeholder={textPlaceholder} className="tw-text-inherit" />
+          <CommandInput placeholder={textPlaceholder} className="tw:text-inherit" />
           <CommandEmpty>{commandEmptyMessage}</CommandEmpty>
           <CommandList>
             {isGroupedOptions(options)

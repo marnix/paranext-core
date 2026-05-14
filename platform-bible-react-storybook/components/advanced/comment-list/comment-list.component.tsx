@@ -1,7 +1,7 @@
 import { ListboxOption, useListbox } from '@/hooks/listbox-keyboard-navigation.hook';
-import { cn } from '@/utils/shadcn-ui.util';
-import React, { RefObject, useCallback, useState } from 'react';
-import { CommentListProps } from './comment-list.types';
+import { cn } from '@/utils/shadcn-ui/utils';
+import React, { RefObject, useCallback, useEffect, useState } from 'react';
+import { AddCommentToThreadOptions, CommentListProps } from './comment-list.types';
 import { CommentThread } from './comment-thread.component';
 
 /**
@@ -11,53 +11,112 @@ import { CommentThread } from './comment-thread.component';
  */
 export default function CommentList({
   className = '',
+  classNameForVerseText,
   threads,
   currentUser,
   localizedStrings,
   handleAddCommentToThread,
   handleUpdateComment,
   handleDeleteComment,
+  handleReadStatusChange,
   assignableUsers,
   canUserAddCommentToThread,
   canUserAssignThreadCallback,
   canUserResolveThreadCallback,
   canUserEditOrDeleteCommentCallback,
+  selectedThreadId: externalSelectedThreadId,
+  onSelectedThreadChange,
+  onVerseRefClick,
 }: CommentListProps) {
-  const [selectedThreadId, setSelectedThreadId] = useState<string | undefined>();
+  const [expandedThreadIds, setExpandedThreadIds] = useState<Set<string>>(new Set());
+  const [lastInteractedThreadId, setLastInteractedThreadId] = useState<string | undefined>();
+  const [lastAssignedUser, setLastAssignedUser] = useState<string | undefined>();
+
+  const handleAddCommentToThreadWithTracking = useCallback(
+    async (options: AddCommentToThreadOptions) => {
+      const result = await handleAddCommentToThread(options);
+      // result === undefined means the submission failed or produced no output; only update the
+      // last assigned user when the submission succeeded and an explicit non-empty assignment was
+      // made. Exclude '' (Unassigned) so that selecting "Unassigned" doesn't become sticky and
+      // silently clear the assignee on other threads via auto-population.
+      if (
+        result !== undefined &&
+        options.assignedUser !== undefined &&
+        options.assignedUser !== ''
+      ) {
+        setLastAssignedUser(options.assignedUser);
+      }
+      return result;
+    },
+    [handleAddCommentToThread],
+  );
+
+  // When external selection changes, add it to expanded set
+  useEffect(() => {
+    if (externalSelectedThreadId) {
+      setExpandedThreadIds((prev) => new Set(prev).add(externalSelectedThreadId));
+      setLastInteractedThreadId(externalSelectedThreadId);
+    }
+  }, [externalSelectedThreadId]);
 
   const activeThreads = threads.filter((thread) =>
     thread.comments.some((comment) => !comment.deleted),
   );
 
-  const options: ListboxOption[] = activeThreads.map((thread) => ({
-    id: thread.id,
-  }));
+  const options: ListboxOption[] = activeThreads.map((thread) => ({ id: thread.id }));
 
-  const handleKeyboardSelectThread = useCallback((option: ListboxOption) => {
-    setSelectedThreadId(option.id);
-  }, []);
+  const handleKeyboardSelectThread = useCallback(
+    (option: ListboxOption) => {
+      setExpandedThreadIds((prev) => new Set(prev).add(option.id));
+      setLastInteractedThreadId(option.id);
+      onSelectedThreadChange?.(option.id);
+    },
+    [onSelectedThreadChange],
+  );
 
-  const handleSelectThread = useCallback((threadId: string) => {
-    setSelectedThreadId(threadId);
-  }, []);
+  const handleSelectThread = useCallback(
+    (threadId: string) => {
+      const isCollapsing = expandedThreadIds.has(threadId);
+      setExpandedThreadIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(threadId)) {
+          next.delete(threadId);
+        } else {
+          next.add(threadId);
+        }
+        return next;
+      });
+      setLastInteractedThreadId(threadId);
+      onSelectedThreadChange?.(isCollapsing ? undefined : threadId);
+    },
+    [expandedThreadIds, onSelectedThreadChange],
+  );
 
   const { listboxRef, activeId, handleKeyDown } = useListbox({
     options,
     onOptionSelect: handleKeyboardSelectThread,
   });
 
-  // Set selected thread id to undefined when Escape is pressed
+  // Collapse the last interacted thread when Escape is pressed
   const handleKeyDownWithEscape = useCallback(
     (event: React.KeyboardEvent<HTMLDivElement>) => {
       if (event.key === 'Escape') {
-        setSelectedThreadId(undefined);
+        if (lastInteractedThreadId && expandedThreadIds.has(lastInteractedThreadId)) {
+          setExpandedThreadIds((prev) => {
+            const next = new Set(prev);
+            next.delete(lastInteractedThreadId);
+            return next;
+          });
+          setLastInteractedThreadId(undefined);
+          onSelectedThreadChange?.(undefined);
+        }
         event.preventDefault();
         event.stopPropagation();
       } else {
         handleKeyDown(event);
       }
     },
-    [handleKeyDown],
+    [lastInteractedThreadId, expandedThreadIds, handleKeyDown, onSelectedThreadChange],
   );
 
   return (
@@ -71,7 +130,7 @@ export default function CommentList({
       aria-activedescendant={activeId ?? undefined}
       aria-label="Comments"
       className={cn(
-        'tw-flex tw-w-full tw-flex-col tw-space-y-3 tw-outline-none focus:tw-ring-2 focus:tw-ring-ring focus:tw-ring-offset-1 focus:tw-ring-offset-background',
+        'tw:flex tw:w-full tw:flex-col tw:space-y-3 tw:outline-hidden tw:focus:ring-2 tw:focus:ring-ring tw:focus:ring-offset-1 tw:focus:ring-offset-background',
 
         className,
       )}
@@ -81,27 +140,33 @@ export default function CommentList({
         <div
           key={thread.id}
           className={cn({
-            'tw-opacity-60': thread.status === 'Resolved',
+            'tw:opacity-60': thread.status === 'Resolved',
           })}
         >
           <CommentThread
+            classNameForVerseText={classNameForVerseText}
             comments={thread.comments}
             localizedStrings={localizedStrings}
             verseRef={thread.verseRef}
             handleSelectThread={handleSelectThread}
             threadId={thread.id}
-            isSelected={selectedThreadId === thread.id}
+            thread={thread}
+            isRead={thread.isRead}
+            isSelected={expandedThreadIds.has(thread.id)}
             currentUser={currentUser}
             assignedUser={thread.assignedUser}
             threadStatus={thread.status}
-            handleAddCommentToThread={handleAddCommentToThread}
+            handleAddCommentToThread={handleAddCommentToThreadWithTracking}
             handleUpdateComment={handleUpdateComment}
             handleDeleteComment={handleDeleteComment}
+            handleReadStatusChange={handleReadStatusChange}
             assignableUsers={assignableUsers}
             canUserAddCommentToThread={canUserAddCommentToThread}
             canUserAssignThreadCallback={canUserAssignThreadCallback}
             canUserResolveThreadCallback={canUserResolveThreadCallback}
             canUserEditOrDeleteCommentCallback={canUserEditOrDeleteCommentCallback}
+            onVerseRefClick={onVerseRefClick}
+            initialAssignedUser={lastAssignedUser}
           />
         </div>
       ))}

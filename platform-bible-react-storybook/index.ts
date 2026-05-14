@@ -18,6 +18,14 @@ export {
 } from './components/advanced/recent-searches.component';
 export type { RecentSearchesProps } from './components/advanced/recent-searches.component';
 export type { BookSelectorLocalizedStrings } from './components/advanced/book-selector.component';
+export {
+  default as CommentEditor,
+  type CommentEditorProps,
+} from './components/advanced/comment-editor/comment-editor.component';
+export {
+  COMMENT_EDITOR_STRING_KEYS,
+  type CommentEditorLocalizedStrings,
+} from './components/advanced/comment-editor/comment-editor.types';
 export type {
   CommentListProps,
   AddCommentToThreadOptions,
@@ -66,6 +74,7 @@ export { default as FootnoteList } from './components/advanced/footnotes/footnot
 export {
   default as Inventory,
   type InventoryItem,
+  type InventorySummaryItem,
 } from './components/advanced/inventory/inventory.component';
 export { INVENTORY_STRING_KEYS } from './components/advanced/inventory/inventory.component';
 export type { InventoryLocalizedStrings } from './components/advanced/inventory/inventory.component';
@@ -83,6 +92,7 @@ export {
   inventoryItemColumn,
   inventoryCountColumn,
   inventoryStatusColumn,
+  getInventoryHeader,
 } from './components/advanced/inventory/inventory-columns';
 export { MarkerMenu, MARKER_MENU_STRING_KEYS } from './components/advanced/marker-menu.component';
 export type {
@@ -150,9 +160,22 @@ export type {
   ComboBoxOption,
   ComboBoxGroup,
 } from './components/basics/combo-box.component';
+export { EditorKeyboardShortcuts } from './components/basics/editor-keyboard-shortcuts.component';
 export { ErrorDump } from './components/basics/error-dump.component';
 export { ERROR_DUMP_STRING_KEYS } from './components/basics/error-dump.component';
 export type { ErrorDumpLocalizedStrings } from './components/basics/error-dump.component';
+export { default as CancelAcceptButtons } from './components/basics/cancel-accept-buttons.component';
+export { CANCEL_ACCEPT_BUTTONS_STRING_KEYS } from './components/basics/cancel-accept-buttons.component';
+export type {
+  CancelAcceptButtonsLocalizedStrings,
+  CancelAcceptButtonsProps,
+} from './components/basics/cancel-accept-buttons.component';
+export { default as UndoRedoButtons } from './components/basics/undo-redo-buttons.component';
+export { UNDO_REDO_BUTTONS_STRING_KEYS } from './components/basics/undo-redo-buttons.component';
+export type {
+  UndoRedoButtonsLocalizedStrings,
+  UndoRedoButtonsProps,
+} from './components/basics/undo-redo-buttons.component';
 export { default as ResultsCard } from './components/basics/results-card.component';
 export { default as SearchBar } from './components/basics/search-bar.component';
 export type { SearchBarProps } from './components/basics/search-bar.component';
@@ -172,7 +195,7 @@ export {
   CardDescription,
   CardContent,
 } from './components/shadcn-ui/card';
-export { default as Checkbox } from './components/shadcn-ui/checkbox';
+export { Checkbox } from './components/shadcn-ui/checkbox';
 export {
   Command,
   CommandEmpty,
@@ -182,9 +205,23 @@ export {
   CommandList,
 } from './components/shadcn-ui/command';
 export * from './components/shadcn-ui/context-menu';
+export {
+  Dialog,
+  DialogPortal,
+  DialogOverlay,
+  DialogClose,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from './components/shadcn-ui/dialog';
+export * from './components/shadcn-ui/button-group';
 export * from './components/shadcn-ui/drawer';
 export * from './components/shadcn-ui/dropdown-menu';
 export { Input } from './components/shadcn-ui/input';
+export { Kbd } from './components/shadcn-ui/kbd';
 export { Label } from './components/shadcn-ui/label';
 export * from './components/shadcn-ui/popover';
 export { Progress } from './components/shadcn-ui/progress';
@@ -220,12 +257,22 @@ export { default as useEvent } from './hooks/use-event.hook';
 export { default as useEventAsync } from './hooks/use-event-async.hook';
 export { default as usePromise } from './hooks/use-promise.hook';
 export type { UsePromiseOptions } from './hooks/use-promise.hook';
+export { useStylesheet } from './hooks/use-stylesheet.hook';
 export {
   useListbox,
   type UseListboxProps,
   type ListboxOption,
 } from './hooks/listbox-keyboard-navigation.hook';
 
+// Z-index scale
+export {
+  Z_INDEX_ABOVE_DOCK,
+  Z_INDEX_FOOTNOTE_EDITOR,
+  Z_INDEX_OVERLAY,
+  Z_INDEX_MODAL_BACKDROP,
+  Z_INDEX_MODAL,
+} from './components/z-index';
+
 // Utils
-export { cn } from './utils/shadcn-ui.util';
+export { cn } from './utils/shadcn-ui/utils';
 export { getToolbarOSReservedSpaceClassName } from './components/advanced/toolbar.component';

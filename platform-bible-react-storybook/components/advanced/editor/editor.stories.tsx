@@ -13,7 +13,7 @@ const meta: Meta<typeof Editor> = {
   decorators: [
     (Story) => (
       <ThemeProvider>
-        <div className="tw-max-w-2xl tw-bg-background tw-p-4">
+        <div className="tw:max-w-2xl tw:bg-background tw:p-4">
           <Story />
         </div>
       </ThemeProvider>
@@ -51,10 +51,12 @@ export const WithCustomPlaceholder: Story = {
 export const WithHtmlContent: StoryObj = {
   render: () => {
     const originalHtml = `<p>This is a note with <b>bold text</b> and <i>italic text</i>.</p><p>It also has <u>underlined</u> and <s>strikethrough</s> text.</p><p>This is a <color name="red">paragraph</color> with some <language name="es-015-vaidika">Paratext</language> <strikethrough>specific</strikethrough> tags</p>`;
+    // Storybook render functions don't look like React components, so hooks must be called with this disable
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [editorState, setEditorState] = useState<SerializedEditorState>(
       htmlToEditorState(originalHtml),
     );
+    // Storybook render functions don't look like React components, so hooks must be called with this disable
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [htmlOutput, setHtmlOutput] = useState<string>('');
 
@@ -64,30 +66,30 @@ export const WithHtmlContent: StoryObj = {
     };
 
     return (
-      <div className="tw-space-y-4">
-        <div className="tw-space-y-2">
-          <h3 className="tw-text-lg tw-font-semibold">Editor with Pre-populated HTML Content</h3>
-          <p className="tw-text-sm tw-text-muted-foreground">
+      <div className="tw:space-y-4">
+        <div className="tw:space-y-2">
+          <h3 className="tw:text-lg tw:font-semibold">Editor with Pre-populated HTML Content</h3>
+          <p className="tw:text-sm tw:text-muted-foreground">
             The editor below is populated with HTML that has been converted to editor format. You
             can edit it, and see the HTML output below.
           </p>
         </div>
-        <div className="tw-rounded-md tw-border tw-border-border">
+        <div className="tw:rounded-md tw:border tw:border-border">
           <Editor
             editorSerializedState={editorState}
             onSerializedChange={handleChange}
             placeholder="Type something..."
           />
         </div>
-        <div className="tw-space-y-2">
-          <h4 className="tw-text-sm tw-font-semibold">HTML Output:</h4>
-          <p className="tw-overflow-x-auto tw-rounded-md tw-border tw-border-border tw-bg-muted tw-p-3 tw-text-xs">
+        <div className="tw:space-y-2">
+          <h4 className="tw:text-sm tw:font-semibold">HTML Output:</h4>
+          <p className="tw:overflow-x-auto tw:rounded-md tw:border tw:border-border tw:bg-muted tw:p-3 tw:text-xs">
             {htmlOutput || '(Edit the content above to see HTML output)'}
           </p>
         </div>
-        <div className="tw-space-y-2">
-          <h4 className="tw-text-sm tw-font-semibold">Original HTML Input:</h4>
-          <p className="tw-overflow-x-auto tw-rounded-md tw-border tw-border-border tw-bg-muted tw-p-3 tw-text-xs">
+        <div className="tw:space-y-2">
+          <h4 className="tw:text-sm tw:font-semibold">Original HTML Input:</h4>
+          <p className="tw:overflow-x-auto tw:rounded-md tw:border tw:border-border tw:bg-muted tw:p-3 tw:text-xs">
             {originalHtml}
           </p>
         </div>

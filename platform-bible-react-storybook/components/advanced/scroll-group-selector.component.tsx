@@ -11,7 +11,8 @@ import {
   SelectValue,
 } from '@/components/shadcn-ui/select';
 import { Direction, readDirection } from '@/utils/dir-helper.util';
-import { cn } from '@/utils/shadcn-ui.util';
+import { cn } from '@/utils/shadcn-ui/utils';
+import { Z_INDEX_ABOVE_DOCK } from '@/components/z-index';
 
 const DEFAULT_SCROLL_GROUP_LOCALIZED_STRINGS = {
   [getLocalizeKeyForScrollGroupId('undefined')]: 'Ø',
@@ -95,7 +96,7 @@ export type ScrollGroupSelectorProps = {
   localizedStrings?: LanguageStrings;
 
   /** Size of the scroll group dropdown button. Defaults to 'sm' */
-  size?: 'default' | 'sm' | 'lg' | 'icon';
+  size?: 'default' | 'sm';
 
   /** Additional css classes to help with unique styling */
   className?: string;
@@ -140,7 +141,7 @@ export function ScrollGroupSelector({
         )
       }
     >
-      <SelectTrigger size={size} className={cn('pr-twp tw-w-auto', className)}>
+      <SelectTrigger size={size} className={cn('pr-twp tw:w-auto', className)}>
         <SelectValue
           placeholder={
             localizedStringsDefaulted[getLocalizeKeyForScrollGroupId(scrollGroupId)] ??
@@ -152,7 +153,7 @@ export function ScrollGroupSelector({
         id={id}
         align={dir === 'rtl' ? 'end' : 'start'}
         // Need to get over the floating web view z-index 200
-        style={{ zIndex: 250 }}
+        style={{ zIndex: Z_INDEX_ABOVE_DOCK }}
       >
         {availableScrollGroupIds.map((scrollGroupOptionId) => (
           <SelectItem key={`${scrollGroupOptionId}`} value={`${scrollGroupOptionId}`}>

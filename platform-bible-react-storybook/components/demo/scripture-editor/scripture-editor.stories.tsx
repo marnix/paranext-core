@@ -1,19 +1,18 @@
 import {
   DeltaOp,
   DeltaOpInsertNoteEmbed,
+  DeltaSource,
   Editorial,
   EditorOptions,
   EditorRef,
-  GENERATOR_NOTE_CALLER,
   getDefaultViewOptions,
-  HIDDEN_NOTE_CALLER,
   isInsertEmbedOpOfType,
   ViewOptions,
 } from '@eten-tech-foundation/platform-editor';
-import { USJ_TYPE, USJ_VERSION } from '@eten-tech-foundation/scripture-utilities';
+import { Usj, USJ_TYPE, USJ_VERSION } from '@eten-tech-foundation/scripture-utilities';
 import { SerializedVerseRef } from '@sillsdev/scripture';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { renderEditorialWithToolbar } from '@/components/demo/scripture-editor/editorial-with-toolbar.renderer';
 import {
   annotationRangeWeb1,
@@ -25,7 +24,7 @@ import {
 import '@/components/demo/scripture-editor/scripture-editor.stories.css';
 import FootnoteEditor from '@/components/advanced/footnote-editor/footnote-editor.component';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/shadcn-ui/popover';
-import { FootnoteEditorLocalizedStrings } from '@/components/advanced/footnote-editor/footnote-editor.types';
+import localizedStrings from '@/localizedStrings.json';
 
 const defaultScrRef: SerializedVerseRef = { book: 'PSA', chapterNum: 1, verseNum: 1 };
 
@@ -53,6 +52,7 @@ This demo version is included in Storybook to showcase the component's functiona
     ref: {
       control: 'object',
       description: 'Reference to the editor instance',
+      // Storybook argType defaultValue must be null for a ref
       // eslint-disable-next-line no-null/no-null
       defaultValue: null,
     },
@@ -88,6 +88,13 @@ This demo version is included in Storybook to showcase the component's functiona
 export default meta;
 
 type Story = StoryObj<typeof Editorial>;
+
+/** Story type that extends Editorial args with a language selector for the footnote editor */
+type FootnoteEditorViewStory = Omit<Story, 'args' | 'argTypes' | 'render'> & {
+  args: NonNullable<Story['args']> & { language: 'en' | 'es' };
+  argTypes: Story['argTypes'] & { language: object };
+  render: (args: NonNullable<Story['args']> & { language: 'en' | 'es' }) => ReactNode;
+};
 
 /** Story type with custom flattened ViewOptions args for the Controls panel */
 type ViewOptionsStory = Omit<Story, 'args' | 'argTypes' | 'render'> & {
@@ -150,17 +157,20 @@ function handleAnnotationOnClick(
   id: string,
   textContent: string,
 ) {
+  // Story callback - logging to console is intentional for demonstrating annotation events
   // eslint-disable-next-line no-console
   console.log('handleAnnotationOnClick', { event, type, id, textContent });
 }
 
 function handleAnnotationOnRemove(type: string, id: string, cause: string, textContent: string) {
+  // Story callback - logging to console is intentional for demonstrating annotation events
   // eslint-disable-next-line no-console
   console.log('handleAnnotationOnRemove', { type, id, cause, textContent });
 }
 
 export const Annotated: Story = {
   render: (args) => {
+    // Ref must default to null to be accepted by React as an element ref
     // eslint-disable-next-line no-null/no-null
     const editorRef = useRef<EditorRef | null>(null);
 
@@ -194,38 +204,6 @@ export const Annotated: Story = {
   },
 };
 
-const inlineNoteOptions: EditorOptions = {
-  hasExternalUI: true,
-  view: { ...getDefaultViewOptions(), noteMode: 'expandInline' },
-  nodes: {
-    noteCallerOnClick: (_event, _noteNodeKey, isCollapsed, getCaller, setCaller) => {
-      if (isCollapsed) return;
-
-      if (getCaller() === GENERATOR_NOTE_CALLER) setCaller(HIDDEN_NOTE_CALLER);
-      else setCaller(GENERATOR_NOTE_CALLER);
-    },
-  },
-};
-
-export const InlineNoteEditing: Story = {
-  render: (args, context) => renderEditorialWithToolbar(args, context, defaultScrRef),
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'This story demonstrates editing notes inline. Move your cursor to a note caller and ' +
-          'the note will expand and can be edited. Move the cursor out of the note and it will ' +
-          'collapse. Click the expanded note caller to toggle between the auto-generated caller ' +
-          'and the hidden caller.',
-      },
-    },
-  },
-  args: {
-    defaultUsj: usjWeb,
-    options: inlineNoteOptions,
-  },
-};
-
 const insertNoteOptions: EditorOptions = {
   hasExternalUI: true,
   view: { ...getDefaultViewOptions(), noteMode: 'expandInline' },
@@ -255,6 +233,7 @@ const customNodeOptions: EditorOptions = {
   nodes: {
     noteCallers: ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'],
     noteCallerOnClick: (event, noteNodeKey, isCollapsed, getCaller, setCaller, getNoteOps) => {
+      // Story demo callback - console.log and alert are intentional to show the click handler
       // eslint-disable-next-line no-console
       console.log(
         'Note caller clicked:',
@@ -265,6 +244,7 @@ const customNodeOptions: EditorOptions = {
         setCaller,
         getNoteOps,
       );
+      // Story demo callback - alert is intentional to show the click handler
       // eslint-disable-next-line no-alert
       alert('Note caller clicked! Check console for details.');
     },
@@ -305,35 +285,27 @@ export const CustomMarkerTrigger: Story = {
   args: {
     defaultUsj: usjWeb,
     options: {
-      hasExternalUI: true,
+      hasExternalUI: false,
       markerMenuTrigger: '?',
     },
   },
 };
 
-const sampleFootnoteEditorLocalizedStrings: FootnoteEditorLocalizedStrings = {
-  '%footnoteEditor_callerDropdown_label%': 'Footnote caller',
-  '%footnoteEditor_callerDropdown_item_generated%': 'Auto-generated',
-  '%footnoteEditor_callerDropdown_item_hidden%': 'Hidden',
-  '%footnoteEditor_callerDropdown_item_custom%': 'Custom',
-  '%footnoteEditor_callerDropdown_tooltip%': 'Footnote caller',
-  '%footnoteEditor_cancelButton_tooltip%': 'Cancel',
-  '%footnoteEditor_copyButton_tooltip%': 'Copy footnote',
-  '%footnoteEditor_noteType_crossReference_label%': 'Cross reference',
-  '%footnoteEditor_noteType_endNote_label%': 'Endnote',
-  '%footnoteEditor_noteType_footnote_label%': 'Footnote',
-  '%footnoteEditor_noteType_tooltip%': 'Change type: Footnote',
-  '%footnoteEditor_noteTypeDropdown_label%': 'Type',
-  '%footnoteEditor_saveButton_tooltip%': 'Save',
-};
-
-export const FootnoteEditorView: Story = {
+export const FootnoteEditorView: FootnoteEditorViewStory = {
+  argTypes: {
+    language: {
+      control: { type: 'select' },
+      options: ['en', 'es'],
+      description: 'Language for the footnote editor localized strings',
+    },
+  },
   render: (args) => {
+    // Ref must default to null to be accepted by React as an element ref
     // eslint-disable-next-line no-null/no-null
     const editorRef = useRef<EditorRef | null>(null);
 
-    const noteKey = useRef<string>();
-    const noteOps = useRef<DeltaOpInsertNoteEmbed[]>();
+    const noteKey = useRef<string | undefined>(undefined);
+    const noteOps = useRef<DeltaOpInsertNoteEmbed[] | undefined>(undefined);
 
     const [popoverX, setPopoverX] = useState<number>();
     const [popoverY, setPopoverY] = useState<number>();
@@ -387,17 +359,40 @@ export const FootnoteEditorView: Story = {
       };
     }, [args.options, viewOptions, noteKey]);
 
+    const openFootnoteEditorOnNewNote = useCallback(
+      (ops?: DeltaOp[], insertedNodeKey?: string) => {
+        if (insertedNodeKey && ops) {
+          // If we are already editing a note, then returns
+          if (noteKey.current) return;
+
+          // Makes sure the node is a note
+          console.log(ops);
+          const noteOp = ops[1];
+          if (!isInsertEmbedOpOfType('note', noteOp)) return;
+
+          const noteElement = editorRef.current?.getElementByKey(insertedNodeKey);
+          // Note element must be defined
+          if (!noteElement) return;
+
+          console.log(noteOp);
+          const targetRect = noteElement.getBoundingClientRect();
+          setPopoverX(targetRect.left);
+          setPopoverY(targetRect.top);
+          setPopoverHeight(targetRect.height);
+          noteKey.current = insertedNodeKey;
+          noteOps.current = [noteOp];
+          setShowFootnoteEditor(true);
+        }
+      },
+      [noteKey],
+    );
+
+    // FootnoteEditor applies changes to the parent editor via parentEditorRef before calling
+    // onClose, so nothing extra is needed here beyond resetting the popover state.
     const onEditorClose = () => {
       noteKey.current = undefined;
       noteOps.current = undefined;
       setShowFootnoteEditor(false);
-    };
-
-    const onEditorSave = (newNoteOps: DeltaOp[]) => {
-      if (noteKey.current) {
-        editorRef.current?.replaceEmbedUpdate(noteKey.current, newNoteOps);
-      }
-      onEditorClose();
     };
 
     return (
@@ -405,23 +400,37 @@ export const FootnoteEditorView: Story = {
         <Editorial
           {...args}
           options={mergedOptions}
+          onUsjChange={(
+            _usj: Usj,
+            ops?: DeltaOp[],
+            _source?: DeltaSource,
+            insertedNodeKey?: string,
+          ) => {
+            // replaceEmbedUpdate creates a new node with a new key; keep noteKey in sync so
+            // subsequent saves use the correct key. Only update for replaceEmbedUpdate (not a
+            // fresh note insertion, which has ops[1] as the note embed).
+            if (noteKey.current && insertedNodeKey && !isInsertEmbedOpOfType('note', ops?.[1]))
+              noteKey.current = insertedNodeKey;
+            openFootnoteEditorOnNewNote(ops, insertedNodeKey);
+          }}
           ref={editorRef}
           onScrRefChange={() => undefined}
         />
         <Popover open={showFootnoteEditor}>
           <PopoverAnchor
-            className="tw-absolute"
+            className="tw:absolute"
             style={{ top: popoverY ?? 0, left: popoverX ?? 0, height: popoverHeight, width: 0 }}
           />
-          <PopoverContent className="tw-w-[500px] tw-p-[10px]">
+          <PopoverContent className="tw:w-max tw:min-w-[500px] tw:p-[10px]">
             <FootnoteEditor
               noteKey={noteKey.current}
               noteOps={noteOps.current}
-              onSave={onEditorSave}
               onClose={onEditorClose}
               scrRef={args.scrRef ?? defaultScrRef}
               editorOptions={mergedOptions}
-              localizedStrings={sampleFootnoteEditorLocalizedStrings}
+              defaultMarkerMenuTrigger={mergedOptions.markerMenuTrigger ?? '\\'}
+              localizedStrings={localizedStrings.localizedStrings?.[args.language]}
+              parentEditorRef={editorRef}
             />
           </PopoverContent>
         </Popover>
@@ -440,8 +449,9 @@ export const FootnoteEditorView: Story = {
   args: {
     defaultUsj: usjWeb,
     scrRef: defaultScrRef,
+    language: 'en',
     options: {
-      hasExternalUI: false,
+      hasExternalUI: true,
       markerMenuTrigger: '\\',
     },
   },
@@ -453,19 +463,23 @@ export const EditorViewOptions: ViewOptionsStory = {
     // Destructure flattened view options from args
     const { markerMode, noteMode, hasSpacing, isFormattedFont } = args;
 
-    // Reconstruct the args with the options.view settings
-    const mergedArgs = {
-      defaultUsj: usjWeb,
-      options: {
-        hasExternalUI: true,
-        view: {
-          markerMode,
-          noteMode,
-          hasSpacing,
-          isFormattedFont,
+    // Memoize to avoid passing a new options object reference on every render, which would cause
+    // Editorial to re-initialize in a loop via its options useEffect → onStateChange → re-render.
+    const mergedArgs = useMemo(
+      () => ({
+        defaultUsj: usjWeb,
+        options: {
+          hasExternalUI: true,
+          view: {
+            markerMode,
+            noteMode,
+            hasSpacing,
+            isFormattedFont,
+          },
         },
-      },
-    };
+      }),
+      [markerMode, noteMode, hasSpacing, isFormattedFont],
+    );
 
     return renderEditorialWithToolbar(mergedArgs, context, defaultScrRef);
   },

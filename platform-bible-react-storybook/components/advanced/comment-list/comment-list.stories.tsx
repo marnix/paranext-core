@@ -22,7 +22,6 @@ const commentListLocalizedStrings: LanguageStrings = {
   '%comment_status_todo%': 'Re-opened',
   '%comment_thread_multiple_replies%': '{count} replies',
   '%comment_thread_single_reply%': '1 reply',
-  '%no_comments%': 'No comments yet',
 };
 
 const mockAssignableUsers: string[] = ['', 'Team', 'Alice', 'Bob', 'Charlie', 'Current User'];
@@ -73,6 +72,7 @@ function CommentListStory({
             deleted: false,
             hideInTextWindow: false,
             language: 'en',
+            isRead: false,
             startPosition: 0,
             selectedText: '',
             contextBefore: '',
@@ -129,36 +129,51 @@ function CommentListStory({
 
     let commentFound = false;
 
-    // Find the comment and mark it as deleted
+    // Find the comment and mark it as deleted, then remove threads where all comments are deleted
     setThreads((prevThreads) =>
-      prevThreads.map((thread) => ({
-        ...thread,
-        comments: thread.comments.map((comment) => {
-          if (comment.id === commentId) {
-            commentFound = true;
-            return {
-              ...comment,
-              deleted: true,
-            };
-          }
-          return comment;
-        }),
-      })),
+      prevThreads
+        .map((thread) => ({
+          ...thread,
+          comments: thread.comments.map((comment) => {
+            if (comment.id === commentId) {
+              commentFound = true;
+              return {
+                ...comment,
+                deleted: true,
+              };
+            }
+            return comment;
+          }),
+        }))
+        .filter((thread) => thread.comments.some((comment) => !comment.deleted)),
     );
 
     return commentFound;
   };
 
   // Default permission callback for edit/delete - only allow for current user's comments
+  // and only if the comment is the last (most recent) in the thread
   const defaultCanUserEditOrDeleteCallback = useMemo(() => {
     return async (commentId: string): Promise<boolean> => {
       console.log(`Checking if user can edit/delete comment ${commentId}`);
-      const comment = threads
-        .flatMap((thread) => thread.comments)
-        .find((c) => c.id === commentId && !c.deleted);
-      return comment?.user === 'Current User';
+      const thread = threads.find((t) => t.comments.some((c) => c.id === commentId && !c.deleted));
+      if (!thread) return false;
+
+      const activeComments = thread.comments.filter((c) => !c.deleted);
+      const lastComment = activeComments[activeComments.length - 1];
+      if (!lastComment || lastComment.id !== commentId) return false;
+
+      return lastComment.user === 'Current User';
     };
   }, [threads]);
+
+  // Default callback for read status change
+  const threadReadStatusChangeCallback = useMemo(() => {
+    return async (threadId: string, markRead: boolean): Promise<boolean> => {
+      console.log(`Marking thread ${threadId} as ${markRead ? 'read' : 'unread'}`);
+      return true;
+    };
+  }, []);
 
   return (
     <CommentList
@@ -168,6 +183,7 @@ function CommentListStory({
       handleAddCommentToThread={handleAddCommentToThread}
       handleUpdateComment={handleUpdateComment}
       handleDeleteComment={handleDeleteComment}
+      handleReadStatusChange={threadReadStatusChangeCallback}
       assignableUsers={mockAssignableUsers}
       canUserAddCommentToThread={canUserAddCommentToThread}
       canUserAssignThreadCallback={canUserAssignThreadCallback}
@@ -182,7 +198,7 @@ function CommentListStory({
 const meta: Meta<typeof CommentList> = {
   title: 'Advanced/CommentList',
   component: CommentList,
-  tags: ['autodocs'],
+  tags: ['autodocs', 'test'],
   decorators: [
     (Story) => (
       <ThemeProvider>
@@ -212,6 +228,10 @@ export const Default: Story = {
         console.log(`Checking if user can resolve thread ${threadId}`);
         return true;
       }}
+      canUserEditOrDeleteCommentCallback={async () => {
+        console.log(`Checking if user can edit/delete comment`);
+        return true;
+      }}
     />
   ),
 };
@@ -225,6 +245,37 @@ export const RestrictedPermissions: Story = {
       canUserAssignThreadCallback={async () => false}
       canUserResolveThreadCallback={async () => false}
       canUserEditOrDeleteCommentCallback={async () => false}
+    />
+  ),
+};
+
+/**
+ * Story demonstrating automatic assignee pre-selection.
+ *
+ * The comment list remembers the last user explicitly assigned when adding a comment. The next new
+ * comment in any thread will automatically pre-select that assignee in the dropdown.
+ *
+ * **To see this feature in action:**
+ *
+ * 1. Expand any thread and open the reply box
+ * 2. Use the assign dropdown to select a user (e.g. "Alice")
+ * 3. Submit the comment
+ * 4. Expand a **different** thread and open its reply box
+ * 5. The assign dropdown will already show "Alice" pre-selected
+ */
+export const AssigneePreselection: Story = {
+  render: () => (
+    <CommentListStory
+      initialThreads={sampleComments}
+      canUserAssignThreadCallback={async (threadId) => {
+        console.log(`Checking if user can assign thread ${threadId}`);
+        return true;
+      }}
+      canUserResolveThreadCallback={async (threadId) => {
+        console.log(`Checking if user can resolve thread ${threadId}`);
+        return true;
+      }}
+      canUserEditOrDeleteCommentCallback={async () => true}
     />
   ),
 };

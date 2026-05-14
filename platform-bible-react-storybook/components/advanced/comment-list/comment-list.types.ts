@@ -39,7 +39,11 @@ export const COMMENT_LIST_STRING_KEYS: LocalizeKey[] = [
   '%comment_status_todo%',
   '%comment_thread_multiple_replies%',
   '%comment_thread_single_reply%',
-  '%no_comments%',
+  '%comment_aria_assign_user%',
+  '%comment_aria_submit_comment%',
+  '%comment_aria_mark_as_read%',
+  '%comment_aria_mark_as_unread%',
+  '%comment_aria_resolve_thread%',
 ];
 
 /** Type definition for the localized strings used in the CommentList component */
@@ -51,12 +55,31 @@ export type CommentListLocalizedStrings = {
 export interface CommentListProps {
   /** Additional class name for the component */
   className?: string;
-  /** Comment threads to render */
+  /** Class name to apply to the display of the verse text for the first comment in the thread */
+  classNameForVerseText?: string;
+  /**
+   * Comment threads to render. The component filters out threads where all comments are deleted,
+   * but does not deduplicate threads. Callers are responsible for pre-filtering (e.g. excluding
+   * `isSpellingNote` and `isBTNote` threads, which belong in Wordlist and Biblical Terms
+   * respectively) and for deduplicating threads with repeated IDs before passing them in.
+   */
   threads: LegacyCommentThread[];
   /** Name of the current user, retrieved from the current user's Paratext Registry user information */
   currentUser: string;
   /** Localized strings for the component */
   localizedStrings: LanguageStrings;
+  /**
+   * Externally controlled selected thread ID. When provided, this will be used as the selected
+   * thread instead of internal state. The parent component is responsible for updating this value
+   * when the selection changes.
+   */
+  selectedThreadId?: string;
+  /**
+   * Callback when the selected thread changes. Called when a thread is selected via click or
+   * keyboard navigation. Parent components can use this to sync their state with the internal
+   * selection.
+   */
+  onSelectedThreadChange?: (threadId: string | undefined) => void;
   /**
    * Handler for adding a comment to a thread. This unified handler supports:
    *
@@ -73,6 +96,8 @@ export interface CommentListProps {
   handleUpdateComment: (commentId: string, contents: string) => Promise<boolean>;
   /** Handler for deleting a comment */
   handleDeleteComment: (commentId: string) => Promise<boolean>;
+  /** Handler for updating a thread's read status */
+  handleReadStatusChange: (threadId: string, markRead: boolean) => Promise<boolean>;
   /**
    * Users that can be assigned to threads. Includes special values: "Team" for team assignment, ""
    * (empty string) for unassigned.
@@ -98,10 +123,14 @@ export interface CommentListProps {
    * that resolves to true if the user can edit or delete the comment, false otherwise.
    */
   canUserEditOrDeleteCommentCallback?: (commentId: string) => Promise<boolean>;
+  /** Callback when the user clicks a verse reference in a comment thread. */
+  onVerseRefClick?: (thread: LegacyCommentThread) => void;
 }
 
 /** Props for the CommentThread component */
 export interface CommentThreadProps {
+  /** Class name to apply to the display of the verse text for the first comment in the thread */
+  classNameForVerseText?: string;
   /** Comments in the thread */
   comments: LegacyComment[];
   /** Localized strings for the component */
@@ -114,10 +143,17 @@ export interface CommentThreadProps {
   currentUser: string;
   /** User assigned to the thread */
   assignedUser?: string;
+  /**
+   * User to pre-select in the reply "Assign to" dropdown when the thread is expanded. Used to
+   * persist the last chosen assignee across consecutive replies within a session.
+   */
+  initialAssignedUser?: string;
   /** Handler for selecting the thread */
   handleSelectThread: (threadId: string) => void;
   /** ID of the thread */
   threadId: string;
+  /** The full thread object, passed through so the onVerseRefClick callback can access all data */
+  thread: LegacyCommentThread;
   /** Status of the thread */
   threadStatus?: CommentStatus;
   /**
@@ -136,6 +172,8 @@ export interface CommentThreadProps {
   handleUpdateComment: (commentId: string, contents: string) => Promise<boolean>;
   /** Handler for deleting a comment */
   handleDeleteComment: (commentId: string) => Promise<boolean>;
+  /** Handler for updating read status */
+  handleReadStatusChange?: (threadId: string, markRead: boolean) => void;
   /**
    * Users that can be assigned to threads. Includes special values: "Team" for team assignment, ""
    * (empty string) for unassigned.
@@ -161,6 +199,12 @@ export interface CommentThreadProps {
    * that resolves to true if the user can edit or delete the comment, false otherwise.
    */
   canUserEditOrDeleteCommentCallback?: (commentId: string) => Promise<boolean>;
+  /** Whether the thread has been read (by the current user) */
+  isRead?: boolean;
+  /** Delay in seconds before auto-marking as read when selected, default 5s */
+  autoReadDelay?: number;
+  /** Callback when the user clicks a verse reference in a comment thread. */
+  onVerseRefClick?: (thread: LegacyCommentThread) => void;
 }
 
 /** Props for the CommentItem component */
@@ -186,11 +230,8 @@ export interface CommentItemProps {
   handleDeleteComment?: (commentId: string) => Promise<boolean>;
   /** Callback when editing state changes */
   onEditingChange?: (isEditing: boolean) => void;
-  /**
-   * Callback to check if the current user can edit or delete a specific comment. Returns a promise
-   * that resolves to true if the user can edit or delete the comment, false otherwise.
-   */
-  canUserEditOrDeleteCommentCallback?: (commentId: string) => Promise<boolean>;
+  /** Whether the current user can edit or delete this comment */
+  canEditOrDelete?: boolean;
   /** Whether the current user can resolve or re-open this thread. */
   canUserResolveThread?: boolean;
 }

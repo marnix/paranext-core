@@ -3,6 +3,7 @@ import { Button } from '@/components/shadcn-ui/button';
 import { Command, CommandGroup, CommandItem, CommandList } from '@/components/shadcn-ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/shadcn-ui/popover';
 import { useState } from 'react';
+import { cn } from '@/utils/shadcn-ui/utils';
 
 /** Interface defining the properties for the RecentSearches component */
 export interface RecentSearchesProps<T> {
@@ -20,6 +21,15 @@ export interface RecentSearchesProps<T> {
   groupHeading?: string;
   /** Optional ID for the popover content for accessibility */
   id?: string;
+  /** Class name for styling the `CommandItem` for each recent search result */
+  classNameForItems?: string;
+  /**
+   * Class name for the trigger button. Defaults to absolute positioning inside an input field. Pass
+   * a custom value to render the button standalone (e.g. `"tw:h-9 tw:w-9"`)
+   */
+  buttonClassName?: string;
+  /** Variant for the trigger button. Defaults to `"ghost"` */
+  buttonVariant?: 'ghost' | 'outline' | 'default' | 'destructive' | 'secondary' | 'link';
 }
 
 /**
@@ -34,6 +44,9 @@ export default function RecentSearches<T>({
   ariaLabel = 'Show recent searches',
   groupHeading = 'Recent',
   id,
+  classNameForItems,
+  buttonClassName = 'tw:absolute tw:right-0 tw:top-0 tw:h-full tw:px-3 tw:py-2',
+  buttonVariant = 'ghost',
 }: RecentSearchesProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -50,15 +63,15 @@ export default function RecentSearches<T>({
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
+          variant={buttonVariant}
           size="icon"
-          className="tw-absolute tw-right-0 tw-top-0 tw-h-full tw-px-3 tw-py-2"
+          className={buttonClassName}
           aria-label={ariaLabel}
         >
-          <Clock className="tw-h-4 tw-w-4" />
+          <Clock className="tw:h-4 tw:w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent id={id} className="tw-w-[300px] tw-p-0" align="start">
+      <PopoverContent id={id} className="tw:w-[300px] tw:p-0" align="start">
         <Command>
           <CommandList>
             <CommandGroup heading={groupHeading}>
@@ -66,9 +79,9 @@ export default function RecentSearches<T>({
                 <CommandItem
                   key={getItemKey(item)}
                   onSelect={() => handleSearchItemSelect(item)}
-                  className="tw-flex tw-items-center"
+                  className={cn('tw:flex tw:items-center', classNameForItems)}
                 >
-                  <Clock className="tw-mr-2 tw-h-4 tw-w-4 tw-opacity-50" />
+                  <Clock className="tw:mr-2 tw:h-4 tw:w-4 tw:opacity-50" />
                   <span>{renderItem(item)}</span>
                 </CommandItem>
               ))}

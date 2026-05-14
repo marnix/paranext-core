@@ -1,6 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Inventory, InventoryItem } from '@/components/advanced/inventory/inventory.component';
 import {
+  Inventory,
+  InventorySummaryItem,
+} from '@/components/advanced/inventory/inventory.component';
+import {
+  getInventoryHeader,
   inventoryCountColumn,
   inventoryItemColumn,
   inventoryStatusColumn,
@@ -10,6 +14,7 @@ import { ThemeProvider } from '@/storybook/theme-provider.component';
 import { ColumnDef } from '@tanstack/react-table';
 import { SerializedVerseRef } from '@sillsdev/scripture';
 import { Scope } from '@/components/utils/scripture.util';
+import { escapeStringRegexp } from 'platform-bible-utils';
 import { useState } from 'react';
 
 const localizedStrings = {
@@ -26,30 +31,46 @@ const localizedStrings = {
   '%webView_inventory_scope_verse%': 'Current verse',
 };
 
-const sampleInventoryItems: InventoryItem[] = [
+const sampleInventoryItems: InventorySummaryItem[] = [
   {
-    inventoryText: 'the the',
-    verse: 'In the the beginning was the Word',
-    verseRef: { book: 'JHN', chapterNum: 1, verseNum: 1 },
-    offset: 7,
+    key: 'the the',
+    count: 1,
+    occurrences: [
+      {
+        reference: { book: 'JHN', chapterNum: 1, verseNum: 1 },
+        text: 'In the the beginning was the Word',
+      },
+    ],
   },
   {
-    inventoryText: 'and and',
-    verse: 'And and God said, Let there be light',
-    verseRef: { book: 'GEN', chapterNum: 1, verseNum: 3 },
-    offset: 4,
+    key: 'and and',
+    count: 1,
+    occurrences: [
+      {
+        reference: { book: 'GEN', chapterNum: 1, verseNum: 3 },
+        text: 'And and God said, Let there be light',
+      },
+    ],
   },
   {
-    inventoryText: 'is is',
-    verse: 'God is is good and merciful',
-    verseRef: { book: 'PSA', chapterNum: 25, verseNum: 8 },
-    offset: 4,
+    key: 'is is',
+    count: 1,
+    occurrences: [
+      {
+        reference: { book: 'PSA', chapterNum: 25, verseNum: 8 },
+        text: 'God is is good and merciful',
+      },
+    ],
   },
   {
-    inventoryText: 'word  word',
-    verse: 'Every word  word has meaning',
-    verseRef: { book: 'MAT', chapterNum: 4, verseNum: 4 },
-    offset: 6,
+    key: 'word  word',
+    count: 1,
+    occurrences: [
+      {
+        reference: { book: 'MAT', chapterNum: 4, verseNum: 4 },
+        text: 'Every word  word has meaning',
+      },
+    ],
   },
 ];
 
@@ -82,7 +103,7 @@ const meta: Meta<typeof Inventory> = {
   decorators: [
     (Story) => (
       <ThemeProvider>
-        <div className="tw-p-4">
+        <div className="tw:p-4">
           <Story />
         </div>
       </ThemeProvider>
@@ -132,24 +153,36 @@ export const Default: Story = {
 
 export const RepeatedWords: Story = {
   render: () => {
-    const repeatedWordsItems: InventoryItem[] = [
+    const repeatedWordsItems: InventorySummaryItem[] = [
       {
-        inventoryText: 'the the',
-        verse: 'In the the beginning was the Word',
-        verseRef: { book: 'GEN', chapterNum: 1, verseNum: 1 },
-        offset: 7,
+        key: 'the the',
+        count: 1,
+        occurrences: [
+          {
+            reference: { book: 'GEN', chapterNum: 1, verseNum: 1 },
+            text: 'In the the beginning was the Word',
+          },
+        ],
       },
       {
-        inventoryText: 'and and',
-        verse: 'And and God said, Let there be light',
-        verseRef: { book: 'GEN', chapterNum: 1, verseNum: 3 },
-        offset: 4,
+        key: 'and and',
+        count: 1,
+        occurrences: [
+          {
+            reference: { book: 'GEN', chapterNum: 1, verseNum: 3 },
+            text: 'And and God said, Let there be light',
+          },
+        ],
       },
       {
-        inventoryText: 'is is',
-        verse: 'God is is good and merciful',
-        verseRef: { book: 'PSA', chapterNum: 25, verseNum: 8 },
-        offset: 4,
+        key: 'is is',
+        count: 1,
+        occurrences: [
+          {
+            reference: { book: 'PSA', chapterNum: 25, verseNum: 8 },
+            text: 'God is is good and merciful',
+          },
+        ],
       },
     ];
 
@@ -181,6 +214,126 @@ export const RepeatedWords: Story = {
     docs: {
       description: {
         story: 'Inventory component specifically configured for repeated words checking.',
+      },
+    },
+  },
+};
+
+function getDescription(markerDescriptions: string[], marker: string): string | undefined {
+  // Search for whole marker surrounded by whitespace or periods or at string boundaries (^ and $)
+  const escapedMarker = escapeStringRegexp(marker);
+  const findMarker = new RegExp(`(^|[\\s.])${escapedMarker}([\\s.]|$)`);
+  return markerDescriptions.find((markerDescription) => findMarker.test(markerDescription));
+}
+
+const markerNames: string[] = [
+  'xt - Cross Reference - Target References',
+  'toc2 - File - Short Table of Contents Text',
+  'fig - Auxiliary - Figure/Illustration/Map',
+  'f - Footnote',
+  'fq - Footnote - Footnote Translation Quotation',
+];
+
+const createMarkerColumns = (
+  approvedItems: string[],
+  onApprovedItemsChange: (items: string[]) => void,
+  unapprovedItems: string[],
+  onUnapprovedItemsChange: (items: string[]) => void,
+): ColumnDef<InventoryTableData>[] => [
+  inventoryItemColumn('Marker'),
+  inventoryCountColumn('Count'),
+  {
+    accessorKey: 'styleName',
+    accessorFn: (row) => getDescription(markerNames, row.items[0]) || 'unknownMarkerLabel',
+    header: ({ column }) => getInventoryHeader(column, 'Style Name'),
+    cell: ({ row }) => {
+      const marker: string = row.getValue('item');
+      return getDescription(markerNames, marker) || 'unknownMarkerLabel';
+    },
+  },
+  inventoryStatusColumn(
+    'Status',
+    approvedItems,
+    onApprovedItemsChange,
+    unapprovedItems,
+    onUnapprovedItemsChange,
+  ),
+];
+
+export const MarkersInventory: Story = {
+  render: () => {
+    const markersItems: InventorySummaryItem[] = [
+      {
+        key: ['xt', 'p'],
+        count: 3,
+        occurrences: [
+          {
+            reference: { book: 'GEN', chapterNum: 1, verseNum: 1 },
+            text: 'In the beginning God created the heavens and the earth.',
+          },
+        ],
+      },
+      {
+        key: ['f', 'v'],
+        count: 5,
+        occurrences: [
+          {
+            reference: { book: 'GEN', chapterNum: 1, verseNum: 3 },
+            text: 'And God said, "Let there be light," and there was light.',
+          },
+        ],
+      },
+      {
+        key: ['toc2', 'c'],
+        count: 1,
+        occurrences: [
+          {
+            reference: { book: 'PSA', chapterNum: 25, verseNum: 8 },
+            text: 'The LORD is good and upright; therefore he instructs sinners in his ways.',
+          },
+        ],
+      },
+      {
+        key: ['fig', 'p'],
+        count: 2,
+        occurrences: [
+          {
+            reference: { book: 'GEN', chapterNum: 1, verseNum: 28 },
+            text: 'God blessed them and said to them, "Be fruitful and increase in number."',
+          },
+        ],
+      },
+    ];
+
+    const [approvedItems, setApprovedItems] = useState<string[]>(['xt']);
+    const [unapprovedItems, setUnapprovedItems] = useState<string[]>(['f']);
+
+    return (
+      <Inventory
+        inventoryItems={markersItems}
+        setVerseRef={(ref: SerializedVerseRef) => console.log('Set verse ref:', ref)}
+        localizedStrings={localizedStrings}
+        approvedItems={approvedItems}
+        unapprovedItems={unapprovedItems}
+        additionalItemsLabels={{
+          checkboxText: 'Show Preceding Markers',
+          tableHeaders: ['Preceding Markers'],
+        }}
+        scope="chapter"
+        onScopeChange={(scope: Scope) => console.log('Scope changed:', scope)}
+        columns={createMarkerColumns(
+          approvedItems,
+          setApprovedItems,
+          unapprovedItems,
+          setUnapprovedItems,
+        )}
+      />
+    );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Inventory component for checking markers.',
       },
     },
   },

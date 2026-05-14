@@ -89,17 +89,9 @@ export function PlatformToolbar({
   canRedo = false,
   blockMarker,
 }: PlatformToolbarProps) {
-  const handleInsertFootnote = () => {
-    editorRef.current?.insertNote('f');
-  };
-
-  const handleInsertCrossReference = () => {
-    editorRef.current?.insertNote('x');
-  };
-
-  const handleInsertEndnote = () => {
-    editorRef.current?.insertNote('fe');
-  };
+  const handleInsertFootnote = () => editorRef.current?.insertMarker('f');
+  const handleInsertCrossReference = () => editorRef.current?.insertMarker('x');
+  const handleInsertEndnote = () => editorRef.current?.insertMarker('fe');
 
   const onSelectProjectMenuItem: SelectMenuItemHandler = (selectedMenuItem) => {
     switch (selectedMenuItem.command) {
@@ -139,7 +131,7 @@ export function PlatformToolbar({
       className="toolbar"
       startAreaChildren={
         <>
-          <div className="tw-flex tw-h-full tw-items-center">
+          <div className="tw:flex tw:h-full tw:items-center">
             <BookChapterControl scrRef={scrRef} handleSubmit={onScrRefChange} />
           </div>
           {!isReadonly && (
